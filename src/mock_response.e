@@ -15,18 +15,29 @@ feature {NONE} -- Initialization
 
 	make (a_status: INTEGER)
 			-- Create response with `a_status' code.
+		require
+			valid_status: a_status >= 100 and a_status <= 599
 		do
 			status_code := a_status
 			create headers.make (5)
 			body := ""
 			delay_ms := 0
+		ensure
+			status_set: status_code = a_status
+			no_body: body.is_empty
+			no_delay: delay_ms = 0
 		end
 
 	make_with_body (a_status: INTEGER; a_body: STRING)
 			-- Create response with `a_status' and `a_body'.
+		require
+			valid_status: a_status >= 100 and a_status <= 599
 		do
 			make (a_status)
 			body := a_body
+		ensure
+			status_set: status_code = a_status
+			body_set: body.same_string (a_body)
 		end
 
 feature -- Access (Queries)
@@ -108,8 +119,16 @@ feature -- Configuration (Commands)
 
 	set_delay (a_milliseconds: INTEGER)
 			-- Set response delay.
+		require
+			non_negative: a_milliseconds >= 0
 		do
 			delay_ms := a_milliseconds
+		ensure
+			delay_set: delay_ms = a_milliseconds
 		end
+
+invariant
+	valid_status_code: status_code >= 100 and status_code <= 599
+	non_negative_delay: delay_ms >= 0
 
 end

@@ -14,11 +14,18 @@ feature {NONE} -- Initialization
 
 	make (a_method: STRING; a_url_pattern: STRING)
 			-- Create matcher for `a_method' and `a_url_pattern'.
+		require
+			method_not_empty: not a_method.is_empty
+			url_pattern_not_empty: not a_url_pattern.is_empty
+			valid_http_method: is_valid_http_method (a_method)
 		do
-			method := a_method
+			method := a_method.as_upper
 			url_pattern := a_url_pattern
 			create required_headers.make (5)
 			create json_path_requirements.make (3)
+		ensure
+			method_set: method.is_case_insensitive_equal (a_method)
+			url_pattern_set: url_pattern.same_string (a_url_pattern)
 		end
 
 feature -- Access (Queries)
@@ -143,6 +150,20 @@ feature -- Configuration (Commands)
 			json_path_requirements.extend ([a_path, a_value])
 		end
 
+feature -- Validation
+
+	is_valid_http_method (a_method: STRING): BOOLEAN
+			-- Is `a_method' a valid HTTP method?
+		do
+			Result := a_method.is_case_insensitive_equal ("GET") or else
+			          a_method.is_case_insensitive_equal ("POST") or else
+			          a_method.is_case_insensitive_equal ("PUT") or else
+			          a_method.is_case_insensitive_equal ("DELETE") or else
+			          a_method.is_case_insensitive_equal ("PATCH") or else
+			          a_method.is_case_insensitive_equal ("HEAD") or else
+			          a_method.is_case_insensitive_equal ("OPTIONS")
+		end
+
 feature {NONE} -- Implementation
 
 	glob_matches (a_pattern: STRING; a_text: STRING): BOOLEAN
@@ -182,5 +203,10 @@ feature {NONE} -- Implementation
 				Result := l_pi > a_pattern.count
 			end
 		end
+
+invariant
+	method_not_empty: not method.is_empty
+	url_pattern_not_empty: not url_pattern.is_empty
+	method_uppercase: method.same_string (method.as_upper)
 
 end

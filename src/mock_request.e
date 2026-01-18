@@ -14,12 +14,20 @@ feature {NONE} -- Initialization
 
 	make (a_method: STRING; a_url: STRING)
 			-- Create request record for `a_method' on `a_url'.
+		require
+			method_not_empty: not a_method.is_empty
+			url_not_empty: not a_url.is_empty
 		do
 			method := a_method
 			url := a_url
 			create headers.make (10)
 			body := ""
 			create timestamp.make_now
+		ensure
+			method_set: method.same_string (a_method)
+			url_set: url.same_string (a_url)
+			no_headers: headers.is_empty
+			no_body: body.is_empty
 		end
 
 feature -- Access (Queries)

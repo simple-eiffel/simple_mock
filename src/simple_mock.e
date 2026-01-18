@@ -124,26 +124,42 @@ feature -- Expectation Building (Commands)
 
 	expect_get (a_url: STRING): MOCK_EXPECTATION
 			-- Shorthand for GET expectation.
+		require
+			url_not_empty: not a_url.is_empty
 		do
 			Result := expect ("GET", a_url)
+		ensure
+			expectation_added: expectation_count = old expectation_count + 1
 		end
 
 	expect_post (a_url: STRING): MOCK_EXPECTATION
 			-- Shorthand for POST expectation.
+		require
+			url_not_empty: not a_url.is_empty
 		do
 			Result := expect ("POST", a_url)
+		ensure
+			expectation_added: expectation_count = old expectation_count + 1
 		end
 
 	expect_put (a_url: STRING): MOCK_EXPECTATION
 			-- Shorthand for PUT expectation.
+		require
+			url_not_empty: not a_url.is_empty
 		do
 			Result := expect ("PUT", a_url)
+		ensure
+			expectation_added: expectation_count = old expectation_count + 1
 		end
 
 	expect_delete (a_url: STRING): MOCK_EXPECTATION
 			-- Shorthand for DELETE expectation.
+		require
+			url_not_empty: not a_url.is_empty
 		do
 			Result := expect ("DELETE", a_url)
+		ensure
+			expectation_added: expectation_count = old expectation_count + 1
 		end
 
 feature -- Verification (Queries)

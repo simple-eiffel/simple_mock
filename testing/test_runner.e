@@ -23,6 +23,9 @@ feature {NONE} -- Initialization
 			if failed = 0 then
 				print ("ALL TESTS PASSED%N")
 			end
+
+			-- Run adversarial tests
+			run_adversarial_tests
 		end
 
 feature -- Test Execution
@@ -427,6 +430,17 @@ feature -- MOCK_VERIFIER Tests
 			else
 				report_fail ("test_mock_verifier_all_matched")
 			end
+		end
+
+feature -- Adversarial Tests
+
+	run_adversarial_tests
+			-- Run adversarial contract tests.
+		local
+			l_adv: ADVERSARIAL_TESTS
+		do
+			create l_adv.make
+			l_adv.run_all
 		end
 
 feature {NONE} -- Reporting
