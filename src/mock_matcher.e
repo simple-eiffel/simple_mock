@@ -1,0 +1,186 @@
+note
+	description: "Rules for matching incoming HTTP requests"
+	author: "Larry Rix"
+	date: "$Date$"
+	revision: "$Revision$"
+
+class
+	MOCK_MATCHER
+
+create
+	make
+
+feature {NONE} -- Initialization
+
+	make (a_method: STRING; a_url_pattern: STRING)
+			-- Create matcher for `a_method' and `a_url_pattern'.
+		do
+			method := a_method
+			url_pattern := a_url_pattern
+			create required_headers.make (5)
+			create json_path_requirements.make (3)
+		end
+
+feature -- Access (Queries)
+
+	method: STRING
+			-- HTTP method to match (GET, POST, etc.)
+
+	url_pattern: STRING
+			-- URL pattern (supports * and ? wildcards)
+
+	required_headers: HASH_TABLE [STRING, STRING]
+			-- Headers that must be present (name -> value)
+
+	body_exact: detachable STRING
+			-- Exact body content to match (if set)
+
+	body_contains: detachable STRING
+			-- Substring body must contain (if set)
+
+	json_path_requirements: ARRAYED_LIST [TUPLE [path: STRING; value: STRING]]
+			-- JSON path requirements (if set)
+
+feature -- Status (Boolean Queries)
+
+	has_header_requirements: BOOLEAN
+			-- Are there header matching requirements?
+		do
+			Result := not required_headers.is_empty
+		end
+
+	has_body_requirements: BOOLEAN
+			-- Are there body matching requirements?
+		do
+			Result := body_exact /= Void or body_contains /= Void or not json_path_requirements.is_empty
+		end
+
+	matches (a_request: MOCK_REQUEST): BOOLEAN
+			-- Does `a_request' match all criteria?
+		do
+			Result := matches_method (a_request.method) and then
+			          matches_url (a_request.url) and then
+			          matches_headers (a_request.headers) and then
+			          matches_body (a_request.body)
+		end
+
+	matches_url (a_url: STRING): BOOLEAN
+			-- Does `a_url' match url_pattern?
+		do
+			if url_pattern.has ('*') or url_pattern.has ('?') then
+				Result := glob_matches (url_pattern, a_url)
+			else
+				Result := a_url.same_string (url_pattern) or else a_url.has_substring (url_pattern)
+			end
+		end
+
+	matches_method (a_method: STRING): BOOLEAN
+			-- Does `a_method' match required method?
+		do
+			Result := method.is_case_insensitive_equal (a_method)
+		end
+
+	matches_headers (a_headers: HASH_TABLE [STRING, STRING]): BOOLEAN
+			-- Do `a_headers' satisfy requirements?
+		local
+			l_keys: ARRAY [STRING]
+			l_key: STRING
+			i: INTEGER
+		do
+			Result := True
+			l_keys := required_headers.current_keys
+			from i := l_keys.lower until i > l_keys.upper or not Result loop
+				l_key := l_keys [i]
+				if attached a_headers.item (l_key) as l_actual then
+					if attached required_headers.item (l_key) as l_expected then
+						if not l_actual.same_string (l_expected) then
+							Result := False
+						end
+					end
+				else
+					Result := False
+				end
+				i := i + 1
+			end
+		end
+
+	matches_body (a_body: STRING): BOOLEAN
+			-- Does `a_body' satisfy requirements?
+		do
+			Result := True
+			if attached body_exact as l_exact then
+				Result := a_body.same_string (l_exact)
+			end
+			if Result and attached body_contains as l_contains then
+				Result := a_body.has_substring (l_contains)
+			end
+			-- JSON path matching would require simple_json integration
+		end
+
+feature -- Configuration (Commands)
+
+	add_header_requirement (a_name: STRING; a_value: STRING)
+			-- Require header `a_name' with `a_value'.
+		do
+			required_headers.force (a_value, a_name)
+		end
+
+	set_body_exact (a_body: STRING)
+			-- Require exact body match.
+		do
+			body_exact := a_body
+		end
+
+	set_body_contains (a_substring: STRING)
+			-- Require body contains `a_substring'.
+		do
+			body_contains := a_substring
+		end
+
+	add_json_path_requirement (a_path: STRING; a_value: STRING)
+			-- Require JSON at `a_path' equals `a_value'.
+		do
+			json_path_requirements.extend ([a_path, a_value])
+		end
+
+feature {NONE} -- Implementation
+
+	glob_matches (a_pattern: STRING; a_text: STRING): BOOLEAN
+			-- Does `a_text' match glob `a_pattern'?
+		local
+			l_pi, l_ti: INTEGER
+			l_star_pi, l_star_ti: INTEGER
+		do
+			from
+				l_pi := 1
+				l_ti := 1
+				l_star_pi := 0
+				l_star_ti := 0
+			until
+				l_ti > a_text.count
+			loop
+				if l_pi <= a_pattern.count and then (a_pattern.item (l_pi) = '?' or a_pattern.item (l_pi) = a_text.item (l_ti)) then
+					l_pi := l_pi + 1
+					l_ti := l_ti + 1
+				elseif l_pi <= a_pattern.count and then a_pattern.item (l_pi) = '*' then
+					l_star_pi := l_pi
+					l_star_ti := l_ti
+					l_pi := l_pi + 1
+				elseif l_star_pi > 0 then
+					l_pi := l_star_pi + 1
+					l_star_ti := l_star_ti + 1
+					l_ti := l_star_ti
+				else
+					Result := False
+					l_ti := a_text.count + 1 -- exit loop
+				end
+			end
+			if l_ti > a_text.count then
+				from until l_pi > a_pattern.count or else a_pattern.item (l_pi) /= '*' loop
+					l_pi := l_pi + 1
+				end
+				Result := l_pi > a_pattern.count
+			end
+		end
+
+end

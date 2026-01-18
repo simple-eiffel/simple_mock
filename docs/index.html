@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>simple_mock - HTTP Mock Server for Eiffel</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <img src="images/logo.png" alt="simple_mock logo" class="logo">
+            <h1>simple_mock</h1>
+            <p class="tagline">HTTP Mock Server for Testing</p>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <a href="#overview">Overview</a>
+            <a href="#quickstart">Quick Start</a>
+            <a href="#api">API Reference</a>
+            <a href="#examples">Examples</a>
+            <a href="https://github.com/simple-eiffel/simple_mock">GitHub</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>simple_mock is an HTTP mock server library for Eiffel that enables testing of HTTP client code without making real network requests. Define expectations, record requests, and verify calls.</p>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>Expectation-Based</h3>
+                    <p>Define expected requests and the responses to return. Supports status codes, headers, JSON bodies, and delays.</p>
+                </div>
+                <div class="feature">
+                    <h3>Flexible Matching</h3>
+                    <p>Match URLs with glob patterns (* and ?), require specific headers, and validate request bodies.</p>
+                </div>
+                <div class="feature">
+                    <h3>Request Recording</h3>
+                    <p>Track all received requests for verification. Check if URLs were called and how many times.</p>
+                </div>
+                <div class="feature">
+                    <h3>Fluent API</h3>
+                    <p>Chainable configuration methods for building expectations in a readable, declarative style.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="quickstart">
+            <h2>Quick Start</h2>
+            <pre><code>local
+    l_mock: SIMPLE_MOCK
+do
+    -- Create mock server
+    create l_mock.make
+
+    -- Set up expectation
+    l_mock.expect_get ("/api/users")
+        .then_respond_json (200, "[{\"id\": 1}]")
+
+    -- Start server
+    l_mock.start
+
+    -- Make HTTP calls to http://localhost:8080/api/users
+
+    -- Verify
+    if l_mock.was_requested ("/api/users") then
+        print ("API called%N")
+    end
+
+    l_mock.stop
+end</code></pre>
+        </section>
+
+        <section id="api">
+            <h2>API Reference</h2>
+
+            <h3>SIMPLE_MOCK (Facade)</h3>
+            <table>
+                <thead>
+                    <tr><th>Feature</th><th>Signature</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>make</td><td>make</td><td>Create on default port 8080</td></tr>
+                    <tr><td>make_on_port</td><td>make_on_port (a_port: INTEGER)</td><td>Create on specified port</td></tr>
+                    <tr><td>port</td><td>port: INTEGER</td><td>Server port number</td></tr>
+                    <tr><td>url</td><td>url: STRING</td><td>Full URL (http://localhost:port)</td></tr>
+                    <tr><td>is_running</td><td>is_running: BOOLEAN</td><td>Is server accepting requests?</td></tr>
+                    <tr><td>start</td><td>start</td><td>Start the mock server</td></tr>
+                    <tr><td>stop</td><td>stop</td><td>Stop the mock server</td></tr>
+                    <tr><td>reset</td><td>reset</td><td>Clear all expectations and history</td></tr>
+                    <tr><td>expect</td><td>expect (a_method, a_url: STRING): MOCK_EXPECTATION</td><td>Create expectation</td></tr>
+                    <tr><td>expect_get</td><td>expect_get (a_url: STRING): MOCK_EXPECTATION</td><td>Shorthand for GET</td></tr>
+                    <tr><td>expect_post</td><td>expect_post (a_url: STRING): MOCK_EXPECTATION</td><td>Shorthand for POST</td></tr>
+                    <tr><td>was_requested</td><td>was_requested (a_url: STRING): BOOLEAN</td><td>Was URL requested?</td></tr>
+                    <tr><td>request_count</td><td>request_count (a_url: STRING): INTEGER</td><td>Number of requests to URL</td></tr>
+                    <tr><td>verify_all_matched</td><td>verify_all_matched: BOOLEAN</td><td>All expectations matched?</td></tr>
+                </tbody>
+            </table>
+
+            <h3>MOCK_EXPECTATION (Builder Pattern)</h3>
+            <table>
+                <thead>
+                    <tr><th>Feature</th><th>Signature</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>with_header</td><td>with_header (a_name, a_value: STRING): MOCK_EXPECTATION</td><td>Require header</td></tr>
+                    <tr><td>with_body</td><td>with_body (a_body: STRING): MOCK_EXPECTATION</td><td>Require exact body</td></tr>
+                    <tr><td>with_body_containing</td><td>with_body_containing (a_text: STRING): MOCK_EXPECTATION</td><td>Require body substring</td></tr>
+                    <tr><td>then_respond</td><td>then_respond (a_status: INTEGER): MOCK_EXPECTATION</td><td>Set response status</td></tr>
+                    <tr><td>then_respond_json</td><td>then_respond_json (a_status: INTEGER; a_json: STRING): MOCK_EXPECTATION</td><td>Set JSON response</td></tr>
+                    <tr><td>with_response_header</td><td>with_response_header (a_name, a_value: STRING): MOCK_EXPECTATION</td><td>Add response header</td></tr>
+                    <tr><td>with_delay</td><td>with_delay (a_ms: INTEGER): MOCK_EXPECTATION</td><td>Add response delay</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="examples">
+            <h2>Examples</h2>
+
+            <h3>Testing an API Client</h3>
+            <pre><code>test_fetch_users
+    local
+        l_mock: SIMPLE_MOCK
+        l_client: MY_API_CLIENT
+    do
+        -- Setup mock
+        create l_mock.make_on_port (9999)
+        l_mock.expect_get ("/api/users")
+            .with_header ("Authorization", "Bearer token123")
+            .then_respond_json (200, "[{\"id\": 1}]")
+        l_mock.start
+
+        -- Test client
+        create l_client.make ("http://localhost:9999")
+        l_client.set_token ("token123")
+        l_client.fetch_users
+
+        -- Verify
+        assert ("users fetched", l_client.user_count = 1)
+        assert ("api called", l_mock.was_requested ("/api/users"))
+
+        l_mock.stop
+    end</code></pre>
+
+            <h3>URL Pattern Matching</h3>
+            <pre><code>-- Exact match
+l_mock.expect_get ("/api/users")
+
+-- Wildcard: matches /api/users, /api/posts, etc.
+l_mock.expect_get ("/api/*")
+
+-- Single char: matches /api/user1, /api/user2, etc.
+l_mock.expect_get ("/api/user?")
+
+-- Path segment: matches /api/123/items, /api/abc/items
+l_mock.expect_get ("/api/*/items")</code></pre>
+
+            <h3>Simulating Delays</h3>
+            <pre><code>-- Simulate slow response (for timeout testing)
+l_mock.expect_get ("/api/slow")
+    .then_respond (200)
+    .with_delay (5000)  -- 5 second delay</code></pre>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Part of the <a href="https://github.com/simple-eiffel">Simple Eiffel</a> ecosystem</p>
+        </div>
+    </footer>
+</body>
+</html>
