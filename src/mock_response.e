@@ -16,10 +16,10 @@ feature {NONE} -- Initialization
 	make (a_status: INTEGER)
 			-- Create response with `a_status' code.
 		require
-			valid_status: a_status >= 100 and a_status <= 599
+			valid_status: a_status >= Min_http_status and a_status <= Max_http_status
 		do
 			status_code := a_status
-			create headers.make (5)
+			create headers.make (Default_headers_capacity)
 			body := ""
 			delay_ms := 0
 		ensure
@@ -31,7 +31,7 @@ feature {NONE} -- Initialization
 	make_with_body (a_status: INTEGER; a_body: STRING)
 			-- Create response with `a_status' and `a_body'.
 		require
-			valid_status: a_status >= 100 and a_status <= 599
+			valid_status: a_status >= Min_http_status and a_status <= Max_http_status
 		do
 			make (a_status)
 			body := a_body
@@ -127,8 +127,19 @@ feature -- Configuration (Commands)
 			delay_set: delay_ms = a_milliseconds
 		end
 
+feature {NONE} -- Constants
+
+	Min_http_status: INTEGER = 100
+			-- Minimum valid HTTP status code
+
+	Max_http_status: INTEGER = 599
+			-- Maximum valid HTTP status code
+
+	Default_headers_capacity: INTEGER = 5
+			-- Default initial capacity for headers table
+
 invariant
-	valid_status_code: status_code >= 100 and status_code <= 599
+	valid_status_code: status_code >= Min_http_status and status_code <= Max_http_status
 	non_negative_delay: delay_ms >= 0
 
 end

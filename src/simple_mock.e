@@ -16,7 +16,7 @@ feature {NONE} -- Initialization
 	make
 			-- Create mock server on default port.
 		do
-			make_on_port (8080)
+			make_on_port (Default_port)
 		end
 
 	make_on_port (a_port: INTEGER)
@@ -197,6 +197,11 @@ feature {NONE} -- Implementation
 
 	internal_verifier: MOCK_VERIFIER
 			-- The verifier
+
+feature {NONE} -- Constants
+
+	Default_port: INTEGER = 8080
+			-- Default mock server port
 
 invariant
 	server_exists: internal_server /= Void

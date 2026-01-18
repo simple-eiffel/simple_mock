@@ -19,8 +19,8 @@ feature {NONE} -- Initialization
 			port_valid: a_port <= 65535
 		do
 			port := a_port
-			create expectations.make (10)
-			create received_requests.make (50)
+			create expectations.make (Default_expectations_capacity)
+			create received_requests.make (Default_requests_capacity)
 			is_running := False
 		ensure
 			port_set: port = a_port
@@ -149,6 +149,14 @@ feature -- Request Handling
 		ensure
 			no_history: received_requests.is_empty
 		end
+
+feature {NONE} -- Constants
+
+	Default_expectations_capacity: INTEGER = 10
+			-- Default initial capacity for expectations list
+
+	Default_requests_capacity: INTEGER = 50
+			-- Default initial capacity for received requests list
 
 invariant
 	port_positive: port > 0

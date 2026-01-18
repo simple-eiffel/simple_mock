@@ -21,8 +21,8 @@ feature {NONE} -- Initialization
 		do
 			method := a_method.as_upper
 			url_pattern := a_url_pattern
-			create required_headers.make (5)
-			create json_path_requirements.make (3)
+			create required_headers.make (Default_headers_capacity)
+			create json_path_requirements.make (Default_json_paths_capacity)
 		ensure
 			method_set: method.is_case_insensitive_equal (a_method)
 			url_pattern_set: url_pattern.same_string (a_url_pattern)
@@ -92,12 +92,12 @@ feature -- Status (Boolean Queries)
 		local
 			l_keys: ARRAY [STRING]
 			l_key: STRING
-			i: INTEGER
+			l_i: INTEGER
 		do
 			Result := True
 			l_keys := required_headers.current_keys
-			from i := l_keys.lower until i > l_keys.upper or not Result loop
-				l_key := l_keys [i]
+			from l_i := l_keys.lower until l_i > l_keys.upper or not Result loop
+				l_key := l_keys [l_i]
 				if attached a_headers.item (l_key) as l_actual then
 					if attached required_headers.item (l_key) as l_expected then
 						if not l_actual.same_string (l_expected) then
@@ -107,7 +107,7 @@ feature -- Status (Boolean Queries)
 				else
 					Result := False
 				end
-				i := i + 1
+				l_i := l_i + 1
 			end
 		end
 
@@ -203,6 +203,14 @@ feature {NONE} -- Implementation
 				Result := l_pi > a_pattern.count
 			end
 		end
+
+feature {NONE} -- Constants
+
+	Default_headers_capacity: INTEGER = 5
+			-- Default initial capacity for required headers table
+
+	Default_json_paths_capacity: INTEGER = 3
+			-- Default initial capacity for JSON path requirements
 
 invariant
 	method_not_empty: not method.is_empty

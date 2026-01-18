@@ -19,7 +19,7 @@ feature {NONE} -- Initialization
 			url_not_empty: not a_url.is_empty
 		do
 			create matcher.make (a_method, a_url)
-			create response.make (200)
+			create response.make (Http_status_ok)
 			match_count := 0
 		ensure
 			method_set: method.same_string (a_method)
@@ -143,6 +143,11 @@ feature -- Tracking (Commands)
 			count_increased: match_count = old match_count + 1
 			was_matched: was_matched
 		end
+
+feature {NONE} -- Constants
+
+	Http_status_ok: INTEGER = 200
+			-- HTTP 200 OK default response status
 
 invariant
 	matcher_exists: matcher /= Void
