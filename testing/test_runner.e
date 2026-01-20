@@ -40,6 +40,7 @@ feature -- Test Execution
 			run_mock_response_tests
 			run_mock_request_tests
 			run_mock_verifier_tests
+			run_integration_tests
 		end
 
 feature -- SIMPLE_MOCK Tests
@@ -429,6 +430,71 @@ feature -- MOCK_VERIFIER Tests
 				report_pass ("test_mock_verifier_all_matched")
 			else
 				report_fail ("test_mock_verifier_all_matched")
+			end
+		end
+
+feature -- Integration Tests (simple_factory + simple_reflection)
+
+	run_integration_tests
+			-- Run integration tests for simple_factory and simple_reflection.
+		local
+			l_pool: MOCK_SERVER_POOL
+			l_server1, l_server2: MOCK_SERVER
+			l_exp: MOCK_EXPECTATION
+			l_person: TEST_PERSON
+			l_json: STRING
+		do
+			print ("%N-- Integration Tests (simple_factory + simple_reflection) --%N")
+
+			-- Test MOCK_SERVER_POOL (simple_factory integration)
+			create l_pool.make
+			l_server1 := l_pool.server_for_port (9001)
+			l_server2 := l_pool.server_for_port (9001)
+			if l_server1 = l_server2 then
+				report_pass ("test_server_pool_caches")
+			else
+				report_fail ("test_server_pool_caches")
+			end
+
+			-- Test pool caches different ports separately
+			create l_pool.make
+			l_server1 := l_pool.server_for_port (9001)
+			l_server2 := l_pool.server_for_port (9002)
+			if l_server1 /= l_server2 and l_server1.port = 9001 and l_server2.port = 9002 then
+				report_pass ("test_server_pool_different_ports")
+			else
+				report_fail ("test_server_pool_different_ports")
+			end
+
+			-- Test pool cached_count
+			create l_pool.make
+			l_server1 := l_pool.server_for_port (9001)
+			l_server2 := l_pool.server_for_port (9002)
+			if l_pool.cached_count = 2 then
+				report_pass ("test_server_pool_cached_count")
+			else
+				report_fail ("test_server_pool_cached_count")
+			end
+
+			-- Test pool invalidate
+			create l_pool.make
+			l_server1 := l_pool.server_for_port (9001)
+			l_pool.invalidate (9001)
+			if not l_pool.is_cached (9001) then
+				report_pass ("test_server_pool_invalidate")
+			else
+				report_fail ("test_server_pool_invalidate")
+			end
+
+			-- Test then_respond_with_object (simple_reflection integration)
+			create l_person.make ("John", 30)
+			create l_exp.make ("GET", "/api/person")
+			l_exp := l_exp.then_respond_with_object (200, l_person)
+			l_json := l_exp.response.body
+			if l_json.has_substring ("John") and l_json.has_substring ("30") then
+				report_pass ("test_then_respond_with_object")
+			else
+				report_fail ("test_then_respond_with_object")
 			end
 		end
 

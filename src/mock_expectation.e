@@ -96,6 +96,22 @@ feature -- Matcher Configuration (Commands returning self for chaining)
 
 feature -- Response Configuration (Commands returning self for chaining)
 
+	then_respond_with_object (a_status: INTEGER; a_object: ANY): MOCK_EXPECTATION
+			-- Set response status and body from object fields as JSON.
+			-- Uses simple_reflection to convert object to JSON.
+		require
+			object_exists: a_object /= Void
+		local
+			l_json: STRING
+		do
+			l_json := object_to_json (a_object)
+			response.set_status (a_status)
+			response.set_json_body (l_json)
+			Result := Current
+		ensure
+			response_has_json: response.headers.has ("Content-Type")
+		end
+
 	then_respond (a_status: INTEGER): MOCK_EXPECTATION
 			-- Set response status code.
 		do
@@ -142,6 +158,91 @@ feature -- Tracking (Commands)
 		ensure
 			count_increased: match_count = old match_count + 1
 			was_matched: was_matched
+		end
+
+feature {NONE} -- Implementation (simple_reflection integration)
+
+	object_to_json (a_object: ANY): STRING
+			-- Convert object fields to JSON string.
+		require
+			object_exists: a_object /= Void
+		local
+			l_reflected: SIMPLE_REFLECTED_OBJECT
+			l_field: SIMPLE_FIELD_INFO
+			l_value: detachable ANY
+			i: INTEGER
+			l_first: BOOLEAN
+		do
+			create Result.make (100)
+			Result.append ("{")
+			l_first := True
+			create l_reflected.make (a_object)
+			from
+				i := 1
+			until
+				i > l_reflected.type_info.fields.count
+			loop
+				l_field := l_reflected.type_info.fields [i]
+				l_value := l_field.value (a_object)
+				if not l_first then
+					Result.append (", ")
+				end
+				l_first := False
+				Result.append ("%"")
+				Result.append (l_field.name.to_string_8)
+				Result.append ("%": ")
+				Result.append (value_to_json (l_value))
+				i := i + 1
+			end
+			Result.append ("}")
+		ensure
+			result_exists: Result /= Void
+			is_json_object: Result.starts_with ("{") and Result.ends_with ("}")
+		end
+
+	value_to_json (a_value: detachable ANY): STRING
+			-- Convert value to JSON string representation.
+		do
+			if a_value = Void then
+				Result := "null"
+			elseif attached {BOOLEAN} a_value as l_bool then
+				Result := if l_bool then "true" else "false" end
+			elseif attached {INTEGER} a_value as l_int then
+				Result := l_int.out
+			elseif attached {INTEGER_64} a_value as l_int64 then
+				Result := l_int64.out
+			elseif attached {REAL_64} a_value as l_real then
+				Result := l_real.out
+			elseif attached {READABLE_STRING_GENERAL} a_value as l_str then
+				Result := "%"" + escape_json_string (l_str.to_string_8) + "%""
+			else
+				Result := "%"" + escape_json_string (a_value.out) + "%""
+			end
+		ensure
+			result_exists: Result /= Void
+		end
+
+	escape_json_string (a_str: STRING): STRING
+			-- Escape special characters for JSON.
+		local
+			i: INTEGER
+			c: CHARACTER
+		do
+			create Result.make (a_str.count)
+			from i := 1 until i > a_str.count loop
+				c := a_str.item (i)
+				inspect c
+				when '"' then Result.append ("\%"")
+				when '\' then Result.append ("\\")
+				when '%N' then Result.append ("\n")
+				when '%R' then Result.append ("\r")
+				when '%T' then Result.append ("\t")
+				else Result.append_character (c)
+				end
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
 		end
 
 feature {NONE} -- Constants
