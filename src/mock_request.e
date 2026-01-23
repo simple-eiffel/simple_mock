@@ -123,12 +123,20 @@ feature -- Configuration (Commands)
 			-- Set request body.
 		do
 			body := a_body
+		ensure
+			body_set: body.same_string (a_body)
 		end
 
 	add_header (a_name: STRING; a_value: STRING)
 			-- Add request header.
+		require
+			name_not_empty: not a_name.is_empty
+			value_not_empty: not a_value.is_empty
 		do
 			headers.force (a_value, a_name)
+		ensure
+			header_added: headers.has (a_name)
+			model_has_header: model_headers.domain [a_name]
 		end
 
 	set_query_string (a_query: STRING)
@@ -142,6 +150,32 @@ feature -- Configuration (Commands)
 			else
 				url := url + "?" + a_query
 			end
+		ensure
+			has_query: url.has ('?')
 		end
+
+feature -- Model Queries (for Design by Contract)
+
+	model_headers: MML_MAP [STRING, STRING]
+			-- Model view of headers as immutable map.
+		local
+			l_keys: ARRAY [STRING]
+			i: INTEGER
+		do
+			create Result
+			l_keys := headers.current_keys
+			from i := l_keys.lower until i > l_keys.upper loop
+				if attached headers.item (l_keys [i]) as l_val then
+					Result := Result.updated (l_keys [i], l_val)
+				end
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
+		end
+
+invariant
+	method_not_empty: not method.is_empty
+	url_not_empty: not url.is_empty
 
 end

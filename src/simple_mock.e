@@ -120,6 +120,8 @@ feature -- Expectation Building (Commands)
 			internal_server.add_expectation (Result)
 		ensure
 			expectation_added: expectation_count = old expectation_count + 1
+			model_extended: model_expectations.count = old model_expectations.count + 1
+			model_has_expectation: model_expectations.has (Result)
 		end
 
 	expect_get (a_url: STRING): MOCK_EXPECTATION
@@ -130,6 +132,7 @@ feature -- Expectation Building (Commands)
 			Result := expect ("GET", a_url)
 		ensure
 			expectation_added: expectation_count = old expectation_count + 1
+			is_get: Result.method.is_case_insensitive_equal ("GET")
 		end
 
 	expect_post (a_url: STRING): MOCK_EXPECTATION
@@ -140,6 +143,7 @@ feature -- Expectation Building (Commands)
 			Result := expect ("POST", a_url)
 		ensure
 			expectation_added: expectation_count = old expectation_count + 1
+			is_post: Result.method.is_case_insensitive_equal ("POST")
 		end
 
 	expect_put (a_url: STRING): MOCK_EXPECTATION
@@ -150,6 +154,7 @@ feature -- Expectation Building (Commands)
 			Result := expect ("PUT", a_url)
 		ensure
 			expectation_added: expectation_count = old expectation_count + 1
+			is_put: Result.method.is_case_insensitive_equal ("PUT")
 		end
 
 	expect_delete (a_url: STRING): MOCK_EXPECTATION
@@ -160,6 +165,7 @@ feature -- Expectation Building (Commands)
 			Result := expect ("DELETE", a_url)
 		ensure
 			expectation_added: expectation_count = old expectation_count + 1
+			is_delete: Result.method.is_case_insensitive_equal ("DELETE")
 		end
 
 feature -- Verification (Queries)
@@ -190,6 +196,25 @@ feature -- Verification (Queries)
 			Result := internal_verifier.unmatched_expectations
 		end
 
+feature -- Model Queries (for Design by Contract)
+
+	model_expectations: MML_SEQUENCE [MOCK_EXPECTATION]
+			-- Model view of expectations as immutable sequence.
+		do
+			Result := internal_server.model_expectations
+		ensure
+			result_exists: Result /= Void
+			same_count: Result.count = expectation_count
+		end
+
+	model_received_requests: MML_SEQUENCE [MOCK_REQUEST]
+			-- Model view of received requests as immutable sequence.
+		do
+			Result := internal_server.model_received_requests
+		ensure
+			result_exists: Result /= Void
+		end
+
 feature {NONE} -- Implementation
 
 	internal_server: MOCK_SERVER
@@ -204,9 +229,8 @@ feature {NONE} -- Constants
 			-- Default mock server port
 
 invariant
-	server_exists: internal_server /= Void
-	verifier_exists: internal_verifier /= Void
 	port_positive: port > 0
 	port_valid: port <= 65535
+	model_expectations_consistent: model_expectations.count = expectation_count
 
 end

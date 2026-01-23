@@ -128,26 +128,47 @@ feature -- Configuration (Commands)
 
 	add_header_requirement (a_name: STRING; a_value: STRING)
 			-- Require header `a_name' with `a_value'.
+		require
+			name_not_empty: not a_name.is_empty
+			value_not_empty: not a_value.is_empty
 		do
 			required_headers.force (a_value, a_name)
+		ensure
+			header_added: required_headers.has (a_name)
+			header_value: attached required_headers.item (a_name) as v implies v.same_string (a_value)
+			model_has_header: model_required_headers.domain [a_name]
 		end
 
 	set_body_exact (a_body: STRING)
 			-- Require exact body match.
+		require
+			body_not_empty: not a_body.is_empty
 		do
 			body_exact := a_body
+		ensure
+			body_set: body_exact /= Void
+			body_value: attached body_exact as b implies b.same_string (a_body)
 		end
 
 	set_body_contains (a_substring: STRING)
 			-- Require body contains `a_substring'.
+		require
+			substring_not_empty: not a_substring.is_empty
 		do
 			body_contains := a_substring
+		ensure
+			contains_set: body_contains /= Void
+			contains_value: attached body_contains as c implies c.same_string (a_substring)
 		end
 
 	add_json_path_requirement (a_path: STRING; a_value: STRING)
 			-- Require JSON at `a_path' equals `a_value'.
+		require
+			path_not_empty: not a_path.is_empty
 		do
 			json_path_requirements.extend ([a_path, a_value])
+		ensure
+			one_more: json_path_requirements.count = old json_path_requirements.count + 1
 		end
 
 feature -- Validation
@@ -162,6 +183,26 @@ feature -- Validation
 			          a_method.is_case_insensitive_equal ("PATCH") or else
 			          a_method.is_case_insensitive_equal ("HEAD") or else
 			          a_method.is_case_insensitive_equal ("OPTIONS")
+		end
+
+feature -- Model Queries (for Design by Contract)
+
+	model_required_headers: MML_MAP [STRING, STRING]
+			-- Model view of required headers as immutable map.
+		local
+			l_keys: ARRAY [STRING]
+			i: INTEGER
+		do
+			create Result
+			l_keys := required_headers.current_keys
+			from i := l_keys.lower until i > l_keys.upper loop
+				if attached required_headers.item (l_keys [i]) as l_val then
+					Result := Result.updated (l_keys [i], l_val)
+				end
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
 		end
 
 feature {NONE} -- Implementation

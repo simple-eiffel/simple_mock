@@ -88,14 +88,20 @@ feature -- Configuration (Commands)
 
 	set_status (a_status: INTEGER)
 			-- Set status code.
+		require
+			valid_status: a_status >= Min_http_status and a_status <= Max_http_status
 		do
 			status_code := a_status
+		ensure
+			status_set: status_code = a_status
 		end
 
 	set_body (a_body: STRING)
 			-- Set response body.
 		do
 			body := a_body
+		ensure
+			body_set: body.same_string (a_body)
 		end
 
 	set_json_body (a_json: STRING)
@@ -103,18 +109,31 @@ feature -- Configuration (Commands)
 		do
 			body := a_json
 			add_header ("Content-Type", "application/json")
+		ensure
+			body_set: body.same_string (a_json)
+			content_type_set: model_headers.domain ["Content-Type"]
 		end
 
 	add_header (a_name: STRING; a_value: STRING)
 			-- Add response header.
+		require
+			name_not_empty: not a_name.is_empty
+			value_not_empty: not a_value.is_empty
 		do
 			headers.force (a_value, a_name)
+		ensure
+			header_added: headers.has (a_name)
+			model_has_header: model_headers.domain [a_name]
 		end
 
 	set_content_type (a_type: STRING)
 			-- Set Content-Type header.
+		require
+			type_not_empty: not a_type.is_empty
 		do
 			add_header ("Content-Type", a_type)
+		ensure
+			type_set: model_headers.domain ["Content-Type"]
 		end
 
 	set_delay (a_milliseconds: INTEGER)
@@ -127,13 +146,35 @@ feature -- Configuration (Commands)
 			delay_set: delay_ms = a_milliseconds
 		end
 
-feature {NONE} -- Constants
+feature -- Model Queries (for Design by Contract)
+
+	model_headers: MML_MAP [STRING, STRING]
+			-- Model view of headers as immutable map.
+		local
+			l_keys: ARRAY [STRING]
+			i: INTEGER
+		do
+			create Result
+			l_keys := headers.current_keys
+			from i := l_keys.lower until i > l_keys.upper loop
+				if attached headers.item (l_keys [i]) as l_val then
+					Result := Result.updated (l_keys [i], l_val)
+				end
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
+		end
+
+feature -- Constants
 
 	Min_http_status: INTEGER = 100
 			-- Minimum valid HTTP status code
 
 	Max_http_status: INTEGER = 599
 			-- Maximum valid HTTP status code
+
+feature {NONE} -- Implementation Constants
 
 	Default_headers_capacity: INTEGER = 5
 			-- Default initial capacity for headers table

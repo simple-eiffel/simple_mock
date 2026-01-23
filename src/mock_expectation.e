@@ -25,6 +25,8 @@ feature {NONE} -- Initialization
 			method_set: method.same_string (a_method)
 			url_set: url_pattern.same_string (a_url)
 			not_matched: not was_matched
+			model_count_zero: model_match_count = 0
+			model_headers_empty: model_response_headers.is_empty
 		end
 
 feature -- Access (Queries)
@@ -68,30 +70,51 @@ feature -- Matcher Configuration (Commands returning self for chaining)
 
 	with_header (a_name: STRING; a_value: STRING): MOCK_EXPECTATION
 			-- Also match header `a_name' with `a_value'.
+		require
+			name_not_empty: not a_name.is_empty
+			value_not_empty: not a_value.is_empty
 		do
 			matcher.add_header_requirement (a_name, a_value)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			header_required: model_required_headers.domain [a_name]
 		end
 
 	with_body (a_body: STRING): MOCK_EXPECTATION
 			-- Also match exact body content.
+		require
+			body_not_empty: not a_body.is_empty
 		do
 			matcher.set_body_exact (a_body)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			body_set: matcher.body_exact /= Void
 		end
 
 	with_body_containing (a_substring: STRING): MOCK_EXPECTATION
 			-- Also match body containing `a_substring'.
+		require
+			substring_not_empty: not a_substring.is_empty
 		do
 			matcher.set_body_contains (a_substring)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			contains_set: matcher.body_contains /= Void
 		end
 
 	with_json_path (a_path: STRING; a_value: STRING): MOCK_EXPECTATION
 			-- Also match JSON body where `a_path' equals `a_value'.
+		require
+			path_not_empty: not a_path.is_empty
 		do
 			matcher.add_json_path_requirement (a_path, a_value)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			path_added: matcher.json_path_requirements.count > 0
 		end
 
 feature -- Response Configuration (Commands returning self for chaining)
@@ -100,7 +123,7 @@ feature -- Response Configuration (Commands returning self for chaining)
 			-- Set response status and body from object fields as JSON.
 			-- Uses simple_reflection to convert object to JSON.
 		require
-			object_exists: a_object /= Void
+			valid_status: a_status >= 100 and a_status <= 599
 		local
 			l_json: STRING
 		do
@@ -109,44 +132,76 @@ feature -- Response Configuration (Commands returning self for chaining)
 			response.set_json_body (l_json)
 			Result := Current
 		ensure
-			response_has_json: response.headers.has ("Content-Type")
+			same_object: Result = Current
+			status_set: response.status_code = a_status
+			response_has_json: model_response_headers.domain ["Content-Type"]
 		end
 
 	then_respond (a_status: INTEGER): MOCK_EXPECTATION
 			-- Set response status code.
+		require
+			valid_status: a_status >= 100 and a_status <= 599
 		do
 			response.set_status (a_status)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			status_set: response.status_code = a_status
 		end
 
 	then_respond_with_body (a_status: INTEGER; a_body: STRING): MOCK_EXPECTATION
 			-- Set response status and body.
+		require
+			valid_status: a_status >= 100 and a_status <= 599
 		do
 			response.set_status (a_status)
 			response.set_body (a_body)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			status_set: response.status_code = a_status
+			body_set: response.body.same_string (a_body)
 		end
 
 	then_respond_json (a_status: INTEGER; a_json: STRING): MOCK_EXPECTATION
 			-- Set response status and JSON body.
+		require
+			valid_status: a_status >= 100 and a_status <= 599
 		do
 			response.set_status (a_status)
 			response.set_json_body (a_json)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			status_set: response.status_code = a_status
+			body_set: response.body.same_string (a_json)
+			is_json: model_response_headers.domain ["Content-Type"]
 		end
 
 	with_response_header (a_name: STRING; a_value: STRING): MOCK_EXPECTATION
 			-- Add response header.
+		require
+			name_not_empty: not a_name.is_empty
+			value_not_empty: not a_value.is_empty
 		do
 			response.add_header (a_name, a_value)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			header_added: model_response_headers.domain [a_name]
+			header_value: attached model_response_headers [a_name] as v implies v.same_string (a_value)
 		end
 
 	with_delay (a_milliseconds: INTEGER): MOCK_EXPECTATION
 			-- Add response delay for timeout testing.
+		require
+			non_negative: a_milliseconds >= 0
 		do
 			response.set_delay (a_milliseconds)
 			Result := Current
+		ensure
+			same_object: Result = Current
+			delay_set: response.delay_ms = a_milliseconds
 		end
 
 feature -- Tracking (Commands)
@@ -158,6 +213,54 @@ feature -- Tracking (Commands)
 		ensure
 			count_increased: match_count = old match_count + 1
 			was_matched: was_matched
+			model_consistent: model_match_count = match_count
+		end
+
+feature -- Model Queries (for Design by Contract)
+
+	model_match_count: INTEGER
+			-- Model view of match count.
+		do
+			Result := match_count
+		ensure
+			non_negative: Result >= 0
+			consistent: Result = match_count
+		end
+
+	model_response_headers: MML_MAP [STRING, STRING]
+			-- Model view of response headers as immutable map.
+		local
+			l_keys: ARRAY [STRING]
+			i: INTEGER
+		do
+			create Result
+			l_keys := response.headers.current_keys
+			from i := l_keys.lower until i > l_keys.upper loop
+				if attached response.headers.item (l_keys [i]) as l_val then
+					Result := Result.updated (l_keys [i], l_val)
+				end
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
+		end
+
+	model_required_headers: MML_MAP [STRING, STRING]
+			-- Model view of required headers as immutable map.
+		local
+			l_keys: ARRAY [STRING]
+			i: INTEGER
+		do
+			create Result
+			l_keys := matcher.required_headers.current_keys
+			from i := l_keys.lower until i > l_keys.upper loop
+				if attached matcher.required_headers.item (l_keys [i]) as l_val then
+					Result := Result.updated (l_keys [i], l_val)
+				end
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
 		end
 
 feature {NONE} -- Implementation (simple_reflection integration)
@@ -251,9 +354,8 @@ feature {NONE} -- Constants
 			-- HTTP 200 OK default response status
 
 invariant
-	matcher_exists: matcher /= Void
-	response_exists: response /= Void
 	count_non_negative: match_count >= 0
 	was_matched_consistent: was_matched = (match_count > 0)
+	model_count_consistent: model_match_count = match_count
 
 end

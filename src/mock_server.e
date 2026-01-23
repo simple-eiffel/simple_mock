@@ -27,6 +27,8 @@ feature {NONE} -- Initialization
 			no_expectations: expectations.is_empty
 			no_requests: received_requests.is_empty
 			not_running: not is_running
+			model_expectations_empty: model_expectations.is_empty
+			model_requests_empty: model_received_requests.is_empty
 		end
 
 feature -- Access (Queries)
@@ -103,25 +105,30 @@ feature -- Expectation Management (Commands)
 
 	add_expectation (a_expectation: MOCK_EXPECTATION)
 			-- Register `a_expectation'.
-		require
-			expectation_not_void: a_expectation /= Void
 		do
 			expectations.extend (a_expectation)
 		ensure
 			one_more: expectation_count = old expectation_count + 1
 			expectation_added: expectations.has (a_expectation)
+			model_extended: model_expectations.count = old model_expectations.count + 1
+			model_has_expectation: model_expectations.has (a_expectation)
 		end
 
 	remove_expectation (a_expectation: MOCK_EXPECTATION)
 			-- Unregister `a_expectation'.
 		do
 			expectations.prune (a_expectation)
+		ensure
+			removed: not expectations.has (a_expectation)
 		end
 
 	clear_expectations
 			-- Remove all expectations.
 		do
 			expectations.wipe_out
+		ensure
+			empty: expectations.is_empty
+			model_empty: model_expectations.is_empty
 		end
 
 feature -- Request Handling
@@ -140,6 +147,10 @@ feature -- Request Handling
 			-- Add `a_request' to history.
 		do
 			received_requests.extend (a_request)
+		ensure
+			one_more: request_count = old request_count + 1
+			request_added: received_requests.has (a_request)
+			model_extended: model_received_requests.count = old model_received_requests.count + 1
 		end
 
 	clear_history
@@ -148,6 +159,39 @@ feature -- Request Handling
 			received_requests.wipe_out
 		ensure
 			no_history: received_requests.is_empty
+			model_empty: model_received_requests.is_empty
+		end
+
+feature -- Model Queries (for Design by Contract)
+
+	model_expectations: MML_SEQUENCE [MOCK_EXPECTATION]
+			-- Model view of expectations as immutable sequence.
+		local
+			i: INTEGER
+		do
+			create Result
+			from i := 1 until i > expectations.count loop
+				Result := Result & expectations.i_th (i)
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
+			same_count: Result.count = expectations.count
+		end
+
+	model_received_requests: MML_SEQUENCE [MOCK_REQUEST]
+			-- Model view of received requests as immutable sequence.
+		local
+			i: INTEGER
+		do
+			create Result
+			from i := 1 until i > received_requests.count loop
+				Result := Result & received_requests.i_th (i)
+				i := i + 1
+			end
+		ensure
+			result_exists: Result /= Void
+			same_count: Result.count = received_requests.count
 		end
 
 feature {NONE} -- Constants
@@ -161,9 +205,9 @@ feature {NONE} -- Constants
 invariant
 	port_positive: port > 0
 	port_valid: port <= 65535
-	expectations_exist: expectations /= Void
-	requests_exist: received_requests /= Void
 	count_consistent: expectation_count = expectations.count
 	request_count_consistent: request_count = received_requests.count
+	model_expectations_consistent: model_expectations.count = expectations.count
+	model_requests_consistent: model_received_requests.count = received_requests.count
 
 end
