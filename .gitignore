@@ -3,3 +3,5 @@ EIFGENs/
 *.melted
 *.res
 *.lnk
+*.epr
+*.log
