@@ -37,8 +37,13 @@ feature -- Empty Input Tests
 				print ("  FAIL: test_empty_url_expect_get - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_empty_url_expect_get - Contract caught empty URL%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_empty_url_expect_get - Contract caught empty URL%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_empty_url_expect_get - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -55,8 +60,13 @@ feature -- Empty Input Tests
 				print ("  FAIL: test_empty_method_matcher - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_empty_method_matcher - Contract caught empty method%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_empty_method_matcher - Contract caught empty method%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_empty_method_matcher - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -73,8 +83,13 @@ feature -- Empty Input Tests
 				print ("  FAIL: test_empty_url_matcher - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_empty_url_matcher - Contract caught empty URL%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_empty_url_matcher - Contract caught empty URL%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_empty_url_matcher - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -91,8 +106,13 @@ feature -- Empty Input Tests
 				print ("  FAIL: test_empty_method_request - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_empty_method_request - Contract caught empty method%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_empty_method_request - Contract caught empty method%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_empty_method_request - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -111,8 +131,13 @@ feature -- Invalid HTTP Method Tests
 				print ("  FAIL: test_invalid_http_method - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_invalid_http_method - Contract caught invalid method%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_invalid_http_method - Contract caught invalid method%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_invalid_http_method - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -129,8 +154,13 @@ feature -- Invalid HTTP Method Tests
 				print ("  FAIL: test_invalid_http_method_numbers - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_invalid_http_method_numbers - Contract caught invalid method%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_invalid_http_method_numbers - Contract caught invalid method%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_invalid_http_method_numbers - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -149,8 +179,13 @@ feature -- Invalid Status Code Tests
 				print ("  FAIL: test_status_code_negative - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_status_code_negative - Contract caught negative status%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_status_code_negative - Contract caught negative status%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_status_code_negative - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -167,8 +202,13 @@ feature -- Invalid Status Code Tests
 				print ("  FAIL: test_status_code_zero - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_status_code_zero - Contract caught zero status%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_status_code_zero - Contract caught zero status%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_status_code_zero - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -185,8 +225,13 @@ feature -- Invalid Status Code Tests
 				print ("  FAIL: test_status_code_too_low - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_status_code_too_low - Contract caught status < 100%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_status_code_too_low - Contract caught status < 100%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_status_code_too_low - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -203,8 +248,13 @@ feature -- Invalid Status Code Tests
 				print ("  FAIL: test_status_code_too_high - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_status_code_too_high - Contract caught status > 599%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_status_code_too_high - Contract caught status > 599%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_status_code_too_high - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -284,8 +334,13 @@ feature -- Delay Tests
 				print ("  FAIL: test_negative_delay - No exception%N")
 			end
 		rescue
-			passed := passed + 1
-			print ("  PASS: test_negative_delay - Contract caught negative delay%N")
+			if is_precondition_failure then
+				passed := passed + 1
+				print ("  PASS: test_negative_delay - Contract caught negative delay%N")
+			else
+				failed := failed + 1
+				print ("  FAIL: test_negative_delay - an exception that is not a precondition violation%N")
+			end
 			l_retried := True
 			retry
 		end
@@ -339,6 +394,17 @@ feature -- Run All
 			test_zero_delay_valid
 
 			print ("%N=== Summary: " + passed.out + " pass, " + failed.out + " fail ===%N")
+		end
+
+
+feature {NONE} -- Implementation
+
+	is_precondition_failure: BOOLEAN
+			-- Was the exception being rescued a precondition violation? (port-coordination #17:
+			-- these tests counted any exception as the precondition they expect, so a crash
+			-- such as a call on Void passed too.)
+		do
+			Result := attached {PRECONDITION_VIOLATION} (create {EXCEPTION_MANAGER}).last_exception
 		end
 
 end

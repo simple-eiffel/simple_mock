@@ -507,11 +507,22 @@ feature -- Adversarial Tests
 		do
 			create l_adv.make
 			l_adv.run_all
+				-- port-coordination #17: count them with the rest, so TEST_APP's totals and
+				-- exit status include them.
+			passed := passed + l_adv.passed
+			failed := failed + l_adv.failed
+			risk := l_adv.risk
 		end
 
-feature {NONE} -- Reporting
+feature -- Counts
 
 	passed, failed: INTEGER
+			-- Tests here, the adversarial ones included.
+
+	risk: INTEGER
+			-- Adversarial inputs that were accepted where a precondition should block them.
+
+feature {NONE} -- Reporting
 
 	report_pass (a_name: STRING)
 		do

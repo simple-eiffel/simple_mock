@@ -17,6 +17,7 @@ feature {NONE} -- Initialization
 			failed := 0
 
 			run_lib_tests
+			run_full_suite
 
 			print ("%N========================%N")
 			print ("Results: " + passed.out + " passed, " + failed.out + " failed%N")
@@ -34,6 +35,20 @@ feature {NONE} -- Test Runners
 		do
 			create lib_tests
 			run_test (agent lib_tests.test_creation, "test_creation")
+		end
+
+	run_full_suite
+			-- TEST_RUNNER's suites and the adversarial tests (port-coordination #17: the gate's
+			-- root ran one test; these 50-odd ran in no gate).
+		local
+			l_runner: TEST_RUNNER
+		do
+			create l_runner.make
+			passed := passed + l_runner.passed
+			failed := failed + l_runner.failed
+			if l_runner.risk > 0 then
+				print ("Adversarial risks (invalid input accepted): " + l_runner.risk.out + "%N")
+			end
 		end
 
 feature {NONE} -- Implementation
